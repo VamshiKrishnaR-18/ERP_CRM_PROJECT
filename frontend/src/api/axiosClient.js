@@ -23,7 +23,7 @@ axiosClient.interceptors.request.use(
   }
 );
 
-axiosClient.interceptors.request.use(
+axiosClient.interceptors.response.use(
   async (response) => {
     return response;
   },
@@ -33,6 +33,7 @@ axiosClient.interceptors.request.use(
         "Token expired or unauthorized. Redirecting to login page..."
       );
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       window.location.href = "/login";
     }
 

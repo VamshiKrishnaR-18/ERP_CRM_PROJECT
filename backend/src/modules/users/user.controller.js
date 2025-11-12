@@ -5,13 +5,13 @@ import { AppError } from "../../utils/AppError.js";
 
 // ✅ Create a new user
 export const createUser = catchAsync(async (req, res, next) => {
-  const user = await userService.createUser(req.body);
+  const { user, token } = await userService.createUser(req.body);
 
   if (!user) {
     throw new AppError("User creation failed", 400);
   }
 
-  return apiResponse.success(res, user, "User created successfully", 201);
+  return apiResponse.success(res, { user, token }, "User created successfully", 201);
 });
 
 // ✅ Login user

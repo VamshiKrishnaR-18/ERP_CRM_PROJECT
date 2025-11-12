@@ -8,6 +8,12 @@ export function notFound(req, res, next) {
 export function globalErrorHandler(err, req, res, next) {
   console.error("❌ Error:", err.message);
 
+  // Log full error stack in development
+  if (env.nodeEnv === "development") {
+    console.error("Stack trace:", err.stack);
+    console.error("Full error:", err);
+  }
+
   const statusCode = err.statusCode || 500;
 
   const response = {

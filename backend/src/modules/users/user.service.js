@@ -7,18 +7,38 @@ import * as UserPasswordService from "./userCredentials/userPassword.service.js"
 
 // Create User
 export const createUser = async (data) => {
-  const { name, email, role, password } = data;
+  try {
+    console.log("📝 Creating user with data:", { name: data.name, email: data.email, role: data.role });
 
-  const alreadyRegistered = await User.findOne({ email });
-  if (alreadyRegistered) {
-    throw new AppError("Already Registered!", 400);
+    const { name, email, role, password } = data;
+
+    if (!name || !email || !role || !password) {
+      throw new AppError("Missing required fields: name, email, role, password", 400);
+    }
+
+    console.log("🔍 Checking if user already exists...");
+    const alreadyRegistered = await User.findOne({ email });
+    if (alreadyRegistered) {
+      throw new AppError("Already Registered!", 400);
+    }
+
+    console.log("👤 Creating user document...");
+    const user = await User.create({ name, email, role });
+    console.log("✅ User created:", user._id);
+
+    console.log("🔐 Creating password credentials...");
+    await UserPasswordService.createCredentials(user._id, password);
+    console.log("✅ Password credentials created");
+
+    console.log("🎫 Generating JWT token...");
+    const token = await UserPasswordService.generateToken(user);
+    console.log("✅ Token generated");
+
+    return { user, token };
+  } catch (error) {
+    console.error("❌ Error in createUser service:", error.message);
+    throw error;
   }
-
-  const user = await User.create({ name, email, role });
-
-  await UserPasswordService.createCredentials(user._id, password);
-
-  return user;
 };
 
 // Login User

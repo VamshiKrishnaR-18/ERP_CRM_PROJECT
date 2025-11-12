@@ -1,24 +1,35 @@
-export const validate = (schema)=>(req, res, next)=>{
+const validate = (schema) => (req, res, next) => {
     const payload = {
-        body:req.body,
-        params:req.params,
-        query:req.query,
-    }
+        body: req.body,
+        params: req.params,
+        query: req.query,
+    };
 
-    const {error, value}= schema.validate(payload);
+    const { error, value } = schema.validate(payload, {
+        abortEarly: false,
+        stripUnknown: true
+    });
 
-    if(error){
+    if (error) {
         return res.status(400).json({
-            status:"fail",
-            errors:error.details.map(d=>({path:d.path.join("."), messsage:d.message})),
+            status: "fail",
+            message: "Validation failed",
+            errors: error.details.map(d => ({
+                path: d.path.join("."),
+                message: d.message
+            })),
         });
     }
 
-    req.validated = value.body || req.body;
-    req.params= value.params || req.params;
-    req.query = value.query || req.query;
-    
+    // Store validated data in req.validated object
+    req.validated = {
+        body: value.body || {},
+        params: value.params || {},
+        query: value.query || {}
+    };
+
     next();
+};
 
-
-}
+export { validate };
+export default validate;

@@ -1,5 +1,5 @@
 import cors from "cors"
-import { AppError } from "../utils/AppError";
+import { AppError } from "../utils/AppError.js";
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
 .split(",").map(o=>o.trim()).filter(Boolean);
