@@ -1,2 +1,28 @@
 @import "tailwindcss/preflight" layer(base);
 @import "tailwindcss/utilities" layer(utilities);
+
+/* Sidebar Menu Styling */
+.sidebar-menu .ant-menu-item {
+  margin: 4px 8px;
+  border-radius: 6px;
+  height: 40px;
+  line-height: 40px;
+  padding-left: 16px !important;
+}
+
+.sidebar-menu .ant-menu-item-selected {
+  background-color: #e6f4ff !important;
+  color: #1890ff !important;
+}
+
+.sidebar-menu .ant-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+.sidebar-menu .ant-menu-item-disabled {
+  opacity: 0.5;
+}
+
+.sidebar-menu .ant-menu-item .ant-menu-item-icon {
+  font-size: 16px;
+}

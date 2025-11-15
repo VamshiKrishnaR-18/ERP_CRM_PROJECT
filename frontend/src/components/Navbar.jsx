@@ -30,7 +30,7 @@ const Navbar = () => {
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/dashboard" className="flex items-center space-x-3 flex-shrink-0">
+          <Link to="/dashboard" className="flex items-center space-x-3 shrink-0">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
               <span className="text-white font-bold text-lg">E</span>
             </div>

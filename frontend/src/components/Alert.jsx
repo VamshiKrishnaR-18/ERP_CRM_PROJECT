@@ -49,7 +49,7 @@ const Alert = ({ type = 'info', message, onClose, className = '' }) => {
   return (
     <div className={`${config.bg} ${config.border} border rounded-lg p-4 ${className}`}>
       <div className="flex items-start">
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           {config.icon}
         </div>
         <div className="ml-3 flex-1">

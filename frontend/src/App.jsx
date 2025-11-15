@@ -1,5 +1,5 @@
 import { Routes, Route, Link, Navigate } from "react-router-dom";
-import { useAuth } from './context/AuthContext..jsx';
+import { useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { LoadingScreen } from './components/Spinner';

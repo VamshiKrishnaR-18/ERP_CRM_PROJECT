@@ -1,259 +1,124 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Form, Input, InputNumber, Button, Select, Alert } from 'antd';
 import invoiceService from '../../api/invoiceService';
 import customerService from '../../api/customerService';
-import Input from '../../components/Input';
-import Button from '../../components/Button';
 
 function InvoiceForm({ invoice, onSuccess, onCancel }) {
-    const [customers, setCustomers] = useState([]);
-    const [formData, setFormData] = useState({
-        client: '',
-        date: new Date().toISOString().split('T')[0],
-        expiredDate: '',
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [form] = Form.useForm();
+
+  useEffect(() => { (async () => {
+    try { const res = await customerService.getAllCustomers(); setCustomers(res.data); } catch { /* ignore */ }
+  })(); }, []);
+
+  useEffect(() => {
+    if (invoice) {
+      form.setFieldsValue({
+        client: invoice.client?._id || '',
+        year: invoice.year || new Date().getFullYear(),
+        currency: invoice.currency || 'INR',
+        discount: invoice.discount || 0,
+        credit: invoice.credit || 0,
+        items: invoice.items?.length ? invoice.items : [{ itemName: '', description: '', quantity: 1, price: 0, discount: 0, taxRate: 0 }]
+      });
+    } else {
+      form.setFieldsValue({
         year: new Date().getFullYear(),
         currency: 'INR',
         discount: 0,
         credit: 0,
-        items: [
-            {
-                itemName: '',
-                description: '',
-                quantity: 1,
-                price: 0,
-                discount: 0,
-                taxRate: 0
-            }
-        ]
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+        items: [{ itemName: '', description: '', quantity: 1, price: 0, discount: 0, taxRate: 0 }]
+      });
+    }
+  }, [invoice, form]);
 
-    useEffect(() => {
-        fetchCustomers();
-        if (invoice) {
-            setFormData({
-                client: invoice.client?._id || '',
-                date: invoice.date?.split('T')[0] || '',
-                expiredDate: invoice.expiredDate?.split('T')[0] || '',
-                year: invoice.year || new Date().getFullYear(),
-                currency: invoice.currency || 'INR',
-                discount: invoice.discount || 0,
-                credit: invoice.credit || 0,
-                items: invoice.items || []
-            });
-        }
-    }, [invoice]);
+  const onFinish = async (values) => {
+    setLoading(true); setError('');
+    try {
+      if (invoice) await invoiceService.updateInvoice(invoice._id, values);
+      else await invoiceService.createInvoice(values);
+      onSuccess();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to save invoice');
+    } finally { setLoading(false); }
+  };
 
-    const fetchCustomers = async () => {
-        try {
-            const response = await customerService.getAllCustomers();
-            setCustomers(response.data);
-        } catch (err) {
-            console.error('Error fetching customers:', err);
-        }
-    };
+  return (
+    <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+      {error ? <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} /> : null}
+      <Form form={form} layout="vertical" onFinish={onFinish}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Form.Item label="Client" name="client" rules={[{ required: true, message: 'Select a client' }]}>
+            <Select placeholder="Select a client" options={customers.map(c => ({ value: c._id, label: c.name }))} />
+          </Form.Item>
+          <Form.Item label="Year" name="year" rules={[{ required: true }]}>
+            <InputNumber min={2000} max={2100} className="w-full" />
+          </Form.Item>
+        </div>
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleItemChange = (index, field, value) => {
-        const newItems = [...formData.items];
-        newItems[index][field] = value;
-        setFormData({ ...formData, items: newItems });
-    };
-
-    const addItem = () => {
-        setFormData({
-            ...formData,
-            items: [
-                ...formData.items,
-                {
-                    itemName: '',
-                    description: '',
-                    quantity: 1,
-                    price: 0,
-                    discount: 0,
-                    taxRate: 0
-                }
-            ]
-        });
-    };
-
-    const removeItem = (index) => {
-        const newItems = formData.items.filter((_, i) => i !== index);
-        setFormData({ ...formData, items: newItems });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-
-        try {
-            if (invoice) {
-                await invoiceService.updateInvoice(invoice._id, formData);
-            } else {
-                await invoiceService.createInvoice(formData);
-            }
-            onSuccess();
-        } catch (err) {
-            console.error('Error saving invoice:', err);
-            setError(err.response?.data?.message || 'Failed to save invoice');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
-            {error && (
-                <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    {error}
-                </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="mb-4">
-                    <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1">
-                        Client <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                        id="client"
-                        name="client"
-                        value={formData.client}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    >
-                        <option value="">Select a client</option>
-                        {customers.map((customer) => (
-                            <option key={customer._id} value={customer._id}>
-                                {customer.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <Input
-                    label="Year"
-                    type="number"
-                    name="year"
-                    value={formData.year}
-                    onChange={handleChange}
-                    required
-                />
-            </div>
-
-
-            {/* Invoice Items */}
-            <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-semibold text-gray-700">Invoice Items</h4>
-                    <Button type="button" variant="outline" onClick={addItem} className="text-sm">
-                        + Add Item
-                    </Button>
-                </div>
-
-                {formData.items.map((item, index) => (
-                    <div key={index} className="border p-4 rounded mb-3 bg-gray-50">
-                        <div className="flex justify-between items-center mb-2">
-                            <h5 className="font-medium text-sm">Item {index + 1}</h5>
-                            {formData.items.length > 1 && (
-                                <Button
-                                    type="button"
-                                    variant="danger"
-                                    onClick={() => removeItem(index)}
-                                    className="text-xs px-2 py-1"
-                                >
-                                    Remove
-                                </Button>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <Input
-                                label="Item Name"
-                                type="text"
-                                value={item.itemName}
-                                onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                                required
-                            />
-                            <Input
-                                label="Description"
-                                type="text"
-                                value={item.description}
-                                onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                            />
-                            <Input
-                                label="Quantity"
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
-                                required
-                            />
-                            <Input
-                                label="Price"
-                                type="number"
-                                value={item.price}
-                                onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value))}
-                                required
-                            />
-                            <Input
-                                label="Discount (%)"
-                                type="number"
-                                value={item.discount}
-                                onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value))}
-                            />
-                            <Input
-                                label="Tax Rate (%)"
-                                type="number"
-                                value={item.taxRate}
-                                onChange={(e) => handleItemChange(index, 'taxRate', parseFloat(e.target.value))}
-                            />
-                        </div>
+        <div className="mt-2">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold">Invoice Items</h4>
+            <Form.List name="items">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} className="border p-3 rounded mb-3 bg-gray-50">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Form.Item {...restField} name={[name, 'itemName']} label="Item Name" rules={[{ required: true }]}>
+                          <Input />
+                        </Form.Item>
+                        <Form.Item {...restField} name={[name, 'description']} label="Description">
+                          <Input />
+                        </Form.Item>
+                        <Form.Item {...restField} name={[name, 'quantity']} label="Quantity" rules={[{ required: true }]}>
+                          <InputNumber min={1} className="w-full" />
+                        </Form.Item>
+                        <Form.Item {...restField} name={[name, 'price']} label="Price" rules={[{ required: true }]}>
+                          <InputNumber min={0} step={0.01} className="w-full" />
+                        </Form.Item>
+                        <Form.Item {...restField} name={[name, 'discount']} label="Discount (%)">
+                          <InputNumber min={0} max={100} className="w-full" />
+                        </Form.Item>
+                        <Form.Item {...restField} name={[name, 'taxRate']} label="Tax Rate (%)">
+                          <InputNumber min={0} max={100} className="w-full" />
+                        </Form.Item>
+                      </div>
+                      {fields.length > 1 && (
+                        <Button danger onClick={() => remove(name)} size="small">Remove</Button>
+                      )}
                     </div>
-                ))}
-            </div>
+                  ))}
+                  <Button type="dashed" onClick={() => add({ itemName: '', description: '', quantity: 1, price: 0, discount: 0, taxRate: 0 })} block>
+                    + Add Item
+                  </Button>
+                </>
+              )}
+            </Form.List>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-3 gap-4">
-                <Input
-                    label="Currency"
-                    type="text"
-                    name="currency"
-                    value={formData.currency}
-                    onChange={handleChange}
-                    required
-                />
-                <Input
-                    label="Discount"
-                    type="number"
-                    name="discount"
-                    value={formData.discount}
-                    onChange={handleChange}
-                />
-                <Input
-                    label="Credit"
-                    type="number"
-                    name="credit"
-                    value={formData.credit}
-                    onChange={handleChange}
-                />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <Form.Item label="Currency" name="currency" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Discount" name="discount">
+            <InputNumber min={0} className="w-full" />
+          </Form.Item>
+          <Form.Item label="Credit" name="credit">
+            <InputNumber min={0} className="w-full" />
+          </Form.Item>
+        </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button type="button" variant="secondary" onClick={onCancel}>
-                    Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
-                    {loading ? 'Saving...' : invoice ? 'Update Invoice' : 'Create Invoice'}
-                </Button>
-            </div>
-        </form>
-    );
+        <div className="flex justify-end gap-2 border-t pt-3">
+          <Button onClick={onCancel}>Cancel</Button>
+          <Button type="primary" htmlType="submit" loading={loading}>{invoice ? 'Update Invoice' : 'Create Invoice'}</Button>
+        </div>
+      </Form>
+    </div>
+  );
 }
 
 export default InvoiceForm;
