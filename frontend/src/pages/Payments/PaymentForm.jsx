@@ -14,10 +14,10 @@ function PaymentForm({ onSuccess, onCancel }) {
       const response = await invoiceService.getAllInvoices();
       const unpaidInvoices = response.data.filter(inv => inv.paymentStatus === 'unpaid' || inv.paymentStatus === 'partial');
       setInvoices(unpaidInvoices);
-    } catch (err) { /* ignore */ }
+    } catch { /* ignore */ }
   })(); }, []);
 
-  const onValuesChange = (changed, all) => {
+  const onValuesChange = (changed) => {
     if (changed.invoice) {
       const inv = invoices.find(i => i._id === changed.invoice);
       if (inv) form.setFieldsValue({ amount: (inv.total || 0) - (inv.credit || 0) });

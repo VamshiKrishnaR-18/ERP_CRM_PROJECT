@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Form, Input, InputNumber, Button, Select, Alert } from 'antd';
+import { Form, Input, InputNumber, Button, Select, Alert, DatePicker } from 'antd';
+import dayjs from 'dayjs';
 import invoiceService from '../../api/invoiceService';
 import customerService from '../../api/customerService';
 
@@ -14,10 +15,13 @@ function InvoiceForm({ invoice, onSuccess, onCancel }) {
   })(); }, []);
 
   useEffect(() => {
+    const today = dayjs();
     if (invoice) {
       form.setFieldsValue({
         client: invoice.client?._id || '',
         year: invoice.year || new Date().getFullYear(),
+        date: invoice.date ? dayjs(invoice.date) : today,
+        expiredDate: invoice.expiredDate ? dayjs(invoice.expiredDate) : today.add(30, 'day'),
         currency: invoice.currency || 'INR',
         discount: invoice.discount || 0,
         credit: invoice.credit || 0,
@@ -26,6 +30,8 @@ function InvoiceForm({ invoice, onSuccess, onCancel }) {
     } else {
       form.setFieldsValue({
         year: new Date().getFullYear(),
+        date: today,
+        expiredDate: today.add(30, 'day'),
         currency: 'INR',
         discount: 0,
         credit: 0,
@@ -35,14 +41,29 @@ function InvoiceForm({ invoice, onSuccess, onCancel }) {
   }, [invoice, form]);
 
   const onFinish = async (values) => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
-      if (invoice) await invoiceService.updateInvoice(invoice._id, values);
-      else await invoiceService.createInvoice(values);
+      const payload = {
+        ...values,
+        date:
+          values.date && typeof values.date.format === 'function'
+            ? values.date.format('YYYY-MM-DD')
+            : values.date,
+        expiredDate:
+          values.expiredDate && typeof values.expiredDate.format === 'function'
+            ? values.expiredDate.format('YYYY-MM-DD')
+            : values.expiredDate,
+      };
+
+      if (invoice) await invoiceService.updateInvoice(invoice._id, payload);
+      else await invoiceService.createInvoice(payload);
       onSuccess();
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to save invoice');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,6 +76,12 @@ function InvoiceForm({ invoice, onSuccess, onCancel }) {
           </Form.Item>
           <Form.Item label="Year" name="year" rules={[{ required: true }]}>
             <InputNumber min={2000} max={2100} className="w-full" />
+          </Form.Item>
+          <Form.Item label="Invoice Date" name="date" rules={[{ required: true, message: 'Select invoice date' }]}>
+            <DatePicker className="w-full" />
+          </Form.Item>
+          <Form.Item label="Due Date" name="expiredDate" rules={[{ required: true, message: 'Select due date' }]}>
+            <DatePicker className="w-full" />
           </Form.Item>
         </div>
 

@@ -18,7 +18,7 @@ export const createInvoice = async (data, userId) => {
   );
 
   const paymentStatus =
-    total <= 0 ? "paid" : data.credit > 0 ? "partially" : "unpaid";
+    total <= 0 ? "paid" : data.credit > 0 ? "partial" : "unpaid";
 
   const invoice = await Invoice.create({
     ...data,
@@ -47,6 +47,21 @@ export const createInvoice = async (data, userId) => {
   return { invoice, aiInsights };
 };
 
+export const getAllInvoices = async (filters = {}) => {
+  const query = { removed: false };
+
+  if (filters.client) {
+    query.client = filters.client;
+  }
+
+  if (filters.year) {
+    query.year = filters.year;
+  }
+
+  return Invoice.find(query).sort({ createdAt: -1 });
+};
+
+
 export const updateInvoice = async (id, data, userId) => {
   const existing = await Invoice.findById(id);
 
@@ -63,7 +78,7 @@ export const updateInvoice = async (id, data, userId) => {
     total <= 0
       ? "paid"
       : (data.credit ?? existing.credit) > 0
-      ? "partially"
+      ? "partial"
       : "unpaid";
 
   const invoice = await Invoice.findByIdAndUpdate(
@@ -155,7 +170,7 @@ export const analyzeClientInvoices = async (clientId) => {
   };
 
   const aiInsights = await generateAIInsight(
-    `Analyze this client's invoice history: ${JSON.stringify(stats)}. 
+    `Analyze this client's invoice history: ${JSON.stringify(stats)}.
     Provide insights on payment behavior, risks, and suggestions for improving cash flow.`
   );
 

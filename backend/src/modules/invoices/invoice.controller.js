@@ -9,7 +9,7 @@ export const createInvoice = catchAsync(async (req, res, next) => {
 });
 
 export const getAllInvoices = catchAsync(async (req, res, next) => {
-    const invoices = await invoiceService.getAllInvoices();
+    const invoices = await invoiceService.getAllInvoices(req.query || {});
     return apiResponse.success(res, invoices, "Invoices fetched successfully!", 200);
 });
 

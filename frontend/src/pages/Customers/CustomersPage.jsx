@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import customerService from '../../api/customerService';
 import CustomerForm from './CustomerForm';
 import { Table, Button, Card, Modal, Tag, Space, Spin, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -39,16 +40,23 @@ function CustomersPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteCustomer = async (customerId) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
-      try {
-        await customerService.deleteCustomer(customerId);
-        fetchCustomers();
-      } catch (err) {
-        console.error('Error deleting customer:', err);
-        alert('Failed to delete customer');
-      }
-    }
+  const handleDeleteCustomer = (customerId) => {
+    Modal.confirm({
+      title: 'Delete Customer',
+      content: 'Are you sure you want to delete this customer? This action cannot be undone.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      async onOk() {
+        try {
+          await customerService.deleteCustomer(customerId);
+          fetchCustomers();
+        } catch (err) {
+          console.error('Error deleting customer:', err);
+          alert('Failed to delete customer');
+        }
+      },
+    });
   };
 
   const handleFormSuccess = () => {
@@ -68,13 +76,29 @@ function CustomersPage() {
       )
     },
     {
-      title: 'Actions', key: 'actions',
+      title: 'Actions',
+      key: 'actions',
       render: (_, row) => (
         <Space>
           <Button
-            onClick={(e) => { e.stopPropagation(); handleEditCustomer(row); }}
-          >Edit</Button>
-          <Button danger onClick={(e) => { e.stopPropagation(); handleDeleteCustomer(row._id); }}>
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditCustomer(row);
+            }}
+            className="transition-all duration-200"
+          >
+            Edit
+          </Button>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteCustomer(row._id);
+            }}
+            className="transition-all duration-200"
+          >
             Delete
           </Button>
         </Space>
@@ -97,7 +121,15 @@ function CustomersPage() {
     <div className="p-6">
       <Card
         title="Customers"
-        extra={<Button type="primary" onClick={handleCreateCustomer}>+ Add Customer</Button>}
+        extra={(
+          <Button
+            type="primary"
+            onClick={handleCreateCustomer}
+            className="transition-all duration-200"
+          >
+            + Add Customer
+          </Button>
+        )}
       >
         {error && (
           <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />
@@ -108,6 +140,7 @@ function CustomersPage() {
           dataSource={customers}
           rowKey="_id"
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
           onRow={(record) => ({ onClick: () => navigate(`/customers/${record._id}`) })}
         />
       </Card>
