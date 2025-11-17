@@ -9,13 +9,19 @@ function PaymentForm({ onSuccess, onCancel }) {
   const [error, setError] = useState('');
   const [form] = Form.useForm();
 
-  useEffect(() => { (async () => {
-    try {
-      const response = await invoiceService.getAllInvoices();
-      const unpaidInvoices = response.data.filter(inv => inv.paymentStatus === 'unpaid' || inv.paymentStatus === 'partial');
-      setInvoices(unpaidInvoices);
-    } catch { /* ignore */ }
-  })(); }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await invoiceService.getAllInvoices();
+        const list = Array.isArray(response?.data) ? response.data : [];
+        const openInvoices = list.filter((inv) => inv.paymentStatus !== 'paid');
+        setInvoices(openInvoices);
+      } catch (err) {
+        console.error('Error loading invoices for payment:', err);
+        setError(err?.response?.data?.message || 'Failed to load invoices');
+      }
+    })();
+  }, []);
 
   const onValuesChange = (changed) => {
     if (changed.invoice) {
@@ -25,14 +31,24 @@ function PaymentForm({ onSuccess, onCancel }) {
   };
 
   const onFinish = async (values) => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
-      const payload = { ...values, paymentDate: values.paymentDate?.toISOString?.() };
+      const payload = {
+        invoiceId: values.invoice,
+        amount: values.amount,
+        method: values.paymentMethod,
+        reference: values.reference,
+        // NOTE: backend currently only stores invoiceId, amount, method, reference
+        // If you want to persist paymentDate/notes, we can extend the API later.
+      };
       await paymentService.createPayment(payload);
       onSuccess();
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to record payment');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,11 +57,22 @@ function PaymentForm({ onSuccess, onCancel }) {
       <Form form={form} layout="vertical" onFinish={onFinish} onValuesChange={onValuesChange}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Form.Item label="Invoice" name="invoice" rules={[{ required: true, message: 'Select an invoice' }]}>
-            <Select placeholder="Select an invoice" options={invoices.map(inv => ({ value: inv._id, label: `INV-${inv._id?.slice(-6).toUpperCase()} - ${inv.client?.name} - ₹${inv.total}` }))} />
+            <Select
+              placeholder="Select an invoice"
+              options={invoices.map(inv => ({
+                value: inv._id,
+                label: `INV-${inv._id?.slice(-6).toUpperCase()} - ${inv.client?.name} - ₹${inv.total}`,
+              }))}
+            />
           </Form.Item>
           <Form.Item label="Amount" name="amount" rules={[{ required: true, message: 'Enter amount' }]}>
             <InputNumber min={0} step={0.01} className="w-full" />
           </Form.Item>
+          {invoices.length === 0 && !error && (
+            <p className="text-xs text-muted-foreground">
+              No open invoices found. Create an invoice first.
+            </p>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Form.Item label="Payment Method" name="paymentMethod" initialValue="cash" rules={[{ required: true }]}>

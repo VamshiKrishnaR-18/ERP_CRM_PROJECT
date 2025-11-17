@@ -1,7 +1,7 @@
 import { Routes, Route, Link, Navigate } from "react-router-dom";
 import { useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
+import { DashboardLayout } from './components/erp/DashboardLayout';
 import { LoadingScreen } from './components/Spinner';
 
 // Pages
@@ -11,6 +11,7 @@ import DashboardPage from './pages/Dashboard/DashboardPage';
 import CustomersPage from './pages/Customers/CustomersPage';
 import InvoicesPage from './pages/Invoices/InvoicesPage';
 import PaymentsPage from './pages/Payments/PaymentsPage';
+import SettingsPage from './pages/Settings/SettingsPage';
 
 const NotFound = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -32,7 +33,7 @@ function App() {
   }
 
   return (
-    <div id="app-container" className="min-h-screen bg-gray-50">
+    <div id="app-container" className="min-h-screen bg-background text-foreground transition-colors">
       {/* Main Content */}
       <main className="min-h-screen">
         <Routes>
@@ -51,9 +52,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Layout>
+                <DashboardLayout>
                   <DashboardPage />
-                </Layout>
+                </DashboardLayout>
               </ProtectedRoute>
             }
           />
@@ -61,9 +62,9 @@ function App() {
             path="/customers"
             element={
               <ProtectedRoute>
-                <Layout>
+                <DashboardLayout>
                   <CustomersPage />
-                </Layout>
+                </DashboardLayout>
               </ProtectedRoute>
             }
           />
@@ -71,9 +72,9 @@ function App() {
             path="/invoices"
             element={
               <ProtectedRoute>
-                <Layout>
+                <DashboardLayout>
                   <InvoicesPage />
-                </Layout>
+                </DashboardLayout>
               </ProtectedRoute>
             }
           />
@@ -81,9 +82,19 @@ function App() {
             path="/payments"
             element={
               <ProtectedRoute>
-                <Layout>
+                <DashboardLayout>
                   <PaymentsPage />
-                </Layout>
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <SettingsPage />
+                </DashboardLayout>
               </ProtectedRoute>
             }
           />

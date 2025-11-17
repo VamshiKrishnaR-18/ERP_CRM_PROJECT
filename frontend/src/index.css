@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@import "./styles/erp-globals.css";
 
 /* Fallback styling for the top navbar so it still looks modern even if Tailwind misbehaves */
 .erp-navbar {

@@ -1,8 +1,25 @@
 import { useState, useEffect } from 'react';
 import paymentService from '../../api/paymentService';
 import PaymentForm from './PaymentForm';
-import { Table, Button, Card, Modal, Space, Spin, Alert, Tag } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { Modal } from 'antd';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/erp/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/erp/ui/table';
+import { Button } from '../../components/erp/ui/button';
+import { Badge } from '../../components/erp/ui/badge';
 
 function PaymentsPage() {
   const [payments, setPayments] = useState([]);
@@ -55,125 +72,135 @@ function PaymentsPage() {
 
   const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN') : '\u2014');
 
-  const columns = [
-    {
-      title: 'Invoice',
-      key: 'invoice',
-      render: (_, row) => `INV-${row.invoice?._id?.slice(-6).toUpperCase() || 'N/A'}`,
-    },
-    {
-      title: 'Customer',
-      key: 'customer',
-      render: (_, row) => row.invoice?.client?.name || 'N/A',
-    },
-    {
-      title: 'Amount',
-      key: 'amount',
-      render: (_, row) => `₹${row.amount?.toLocaleString() || 0}`,
-    },
-    {
-      title: 'Payment Date',
-      key: 'date',
-      render: (_, row) => formatDate(row.paymentDate || row.createdAt),
-    },
-    {
-      title: 'Payment Method',
-      dataIndex: 'paymentMethod',
-      key: 'paymentMethod',
-      render: (method) => {
-        const map = {
-          cash: 'Cash',
-          credit_card: 'Credit Card',
-          bank_transfer: 'Bank Transfer',
-          upi: 'UPI',
-        };
-        return map[method] || method || 'N/A';
-      },
-    },
-    {
-      title: 'Reference',
-      dataIndex: 'reference',
-      key: 'reference',
-      render: (ref) => ref || '—',
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      render: (_, row) => {
-        const status = row.status || 'completed';
-        const color =
-          status === 'completed'
-            ? 'green'
-            : status === 'pending'
-            ? 'gold'
-            : 'red';
-        return <Tag color={color}>{status.toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, row) => (
-        <Space>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeletePayment(row._id);
-            }}
-            className="transition-all duration-200"
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Spin size="large" />
-          <p className="mt-4 text-gray-600">Loading payments...</p>
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-transparent mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading payments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <Card
-        title="Payments"
-        extra={(
-          <Button
-            type="primary"
-            onClick={handleCreatePayment}
-            className="transition-all duration-200"
-          >
-            + Record Payment
-          </Button>
-        )}
-      >
-        {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
-        <Table
-          columns={columns}
-          dataSource={payments}
-          rowKey="_id"
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 'max-content' }}
-        />
+    <div className="space-y-6">
+      <Card className="bg-card border border-border">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border">
+          <div>
+            <CardTitle className="text-foreground">Payments</CardTitle>
+            <CardDescription>Record and monitor customer payments.</CardDescription>
+          </div>
+          <CardAction>
+            <Button className={"cursor-pointer erp-primary-cta"} variant="default" size="sm" onClick={handleCreatePayment}>
+              + Record Payment
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {error && (
+            <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {error}
+            </div>
+          )}
+
+          <Table className="min-w-full text-sm">
+            <TableHeader className="bg-muted/40">
+              <TableRow>
+                <TableHead>Invoice</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Payment Date</TableHead>
+                <TableHead>Payment Method</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments.length === 0 && !error && (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    No payments found.
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {payments.map((payment) => {
+                const status = payment.status || 'completed';
+
+                const statusColor =
+                  status === 'completed'
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/40'
+                    : status === 'pending'
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/40'
+                    : 'bg-red-500/10 text-red-300 border-red-500/40';
+
+                const methodMap = {
+                  cash: 'Cash',
+                  credit_card: 'Credit Card',
+                  bank_transfer: 'Bank Transfer',
+                  upi: 'UPI',
+                };
+
+                const paymentMethodLabel =
+                  methodMap[payment.paymentMethod] || payment.paymentMethod || 'N/A';
+
+                const invoiceNumber = payment.invoice?._id
+                  ? `INV-${payment.invoice._id.slice(-6).toUpperCase()}`
+                  : 'N/A';
+
+                return (
+                  <TableRow key={payment._id}>
+                    <TableCell>{invoiceNumber}</TableCell>
+                    <TableCell>{payment.invoice?.client?.name || 'N/A'}</TableCell>
+                    <TableCell>{`₹${payment.amount?.toLocaleString() || 0}`}</TableCell>
+                    <TableCell>
+                      {formatDate(payment.paymentDate || payment.createdAt)}
+                    </TableCell>
+                    <TableCell>{paymentMethodLabel}</TableCell>
+                    <TableCell>{payment.reference || '—'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`uppercase ${statusColor}`}
+                      >
+                        {status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300"
+                          onClick={() => handleDeletePayment(payment._id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
       </Card>
 
       <Modal
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         title="Record New Payment"
+        destroyOnHidden
         footer={null}
         width={700}
       >
-        <PaymentForm onSuccess={handleFormSuccess} onCancel={() => setIsModalOpen(false)} />
+        <PaymentForm
+          onSuccess={handleFormSuccess}
+          onCancel={() => setIsModalOpen(false)}
+        />
       </Modal>
     </div>
   );

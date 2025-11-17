@@ -5,6 +5,11 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import 'antd/dist/reset.css';
 import "./index.css";
 import App from "./App.jsx";
+import { getInitialTheme, applyTheme } from "./theme";
+
+// Apply initial theme (light or dark) before React renders
+const initialTheme = getInitialTheme();
+applyTheme(initialTheme);
 
 const container = document.getElementById("root");
 

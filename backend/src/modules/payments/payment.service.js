@@ -3,20 +3,30 @@ import { AppError } from "../../utils/AppError.js";
 import Invoice from "../invoices/invoice.model.js";
 import notificationService from "../../services/notificationService.js";
 
-export const createPayment = async (data, userId) => {
-  const { invoiceId, amount, method, reference } = data;
+export const createPayment = async (data) => {
+  const { invoiceId, amount, method, reference, createdBy } = data;
+
+  if (!invoiceId) {
+    throw new AppError("Invoice ID is required", 400);
+  }
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
     throw new AppError("Invoice not found!", 404);
   }
 
+  // Generate a simple incremental payment number
+  const lastPayment = await Payment.findOne().sort({ number: -1 }).lean();
+  const nextNumber = (lastPayment?.number || 0) + 1;
+
   const payment = await Payment.create({
+    number: nextNumber,
+    client: invoice.client?._id || invoice.client,
     invoice: invoiceId,
     amount,
-    method,
-    reference,
-    createdBy: userId,
+    ref: reference,
+    // paymentMode is optional and not wired yet; "method" from the form is not an ObjectId
+    createdBy,
   });
 
   if (!payment) {
@@ -28,8 +38,14 @@ export const createPayment = async (data, userId) => {
   if (invoice.credit >= invoice.total) {
     invoice.paymentStatus = "paid";
   } else if (invoice.credit > 0) {
-    invoice.paymentStatus = "partially";
+    invoice.paymentStatus = "partial";
   }
+
+  // Link payment back to invoice for history / notifications
+  if (!Array.isArray(invoice.payment)) {
+    invoice.payment = [];
+  }
+  invoice.payment.push(payment._id);
 
   await invoice.save();
 
